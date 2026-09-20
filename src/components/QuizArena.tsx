@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, CheckCircle2, XCircle, Lightbulb, RotateCcw, Award, Sparkles, Filter, ChevronRight, Volume2, HelpCircle } from 'lucide-react';
+import { Trophy, CheckCircle2, XCircle, Lightbulb, RotateCcw, Award, Sparkles, Filter, ChevronRight, Volume2, HelpCircle, Star, GraduationCap, BookOpen } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { QUESTION_BANK, Question } from '../data/questionBank';
 import { playClickSound, playSuccessSound, playGentleWrongSound, playCelebrationFanfare, speakIndonesian } from '../utils/soundEffects';
@@ -145,7 +145,10 @@ export const QuizArena: React.FC<QuizArenaProps> = ({ onEarnStar }) => {
                   : 'bg-gradient-to-r from-yellow-500 to-amber-600 text-white border-yellow-500 shadow-sm'
               }`}
             >
-              🎯 Mulai Kuis 10 Soal
+              <span className="flex items-center justify-center gap-1.5">
+                <Trophy className="w-4 h-4" />
+                <span>Mulai Kuis 10 Soal</span>
+              </span>
             </button>
           </div>
         </div>
@@ -332,8 +335,9 @@ export const QuizArena: React.FC<QuizArenaProps> = ({ onEarnStar }) => {
                   {isExplRevealed && (
                     <div className="mt-4 p-5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 animate-fadeIn space-y-3">
                       <div>
-                        <span className="text-xs font-black uppercase tracking-wider text-amber-800 dark:text-amber-400 block mb-1">
-                          📖 Pembahasan Langkah Demi Langkah:
+                        <span className="text-xs font-black uppercase tracking-wider text-amber-800 dark:text-amber-400 flex items-center gap-1.5 mb-1">
+                          <BookOpen className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                          <span>Pembahasan Langkah Demi Langkah:</span>
                         </span>
                         <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-200 font-medium whitespace-pre-line leading-relaxed">
                           {q.explanation}
@@ -341,7 +345,9 @@ export const QuizArena: React.FC<QuizArenaProps> = ({ onEarnStar }) => {
                       </div>
 
                       <div className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-800 flex items-start gap-2">
-                        <span className="text-base">👩‍🏫</span>
+                        <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0 mt-0.5">
+                          <GraduationCap className="w-3.5 h-3.5" />
+                        </div>
                         <p className="text-xs font-bold text-amber-900 dark:text-amber-200 leading-relaxed">
                           <strong>Trik Guru Hebat:</strong> {q.teacherTip}
                         </p>
@@ -453,10 +459,9 @@ export const QuizArena: React.FC<QuizArenaProps> = ({ onEarnStar }) => {
               )}
             </div>
           ) : (
-            /* Exam Result Screen */
             <div className="text-center py-6 animate-fadeIn">
-              <div className="w-20 h-20 rounded-3xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-4 text-4xl shadow-inner">
-                🏆
+              <div className="w-20 h-20 rounded-3xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-4 shadow-inner">
+                <Trophy className="w-10 h-10" />
               </div>
 
               <span className="text-xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
@@ -468,17 +473,29 @@ export const QuizArena: React.FC<QuizArenaProps> = ({ onEarnStar }) => {
 
               <div className="flex items-center justify-center gap-2 my-4">
                 {examScore >= 80 ? (
-                  <span className="px-4 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-extrabold text-sm flex items-center gap-1.5 border border-emerald-300">
+                  <span className="px-4 py-2 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-extrabold text-xs sm:text-sm flex items-center gap-2 border border-emerald-300 dark:border-emerald-800">
                     <Sparkles className="w-4 h-4 text-amber-500" />
-                    Predikat: Sangat Hebat! (Bintang Emas ⭐⭐⭐)
+                    <span>Predikat: Sangat Hebat! (Bintang Emas)</span>
+                    <span className="flex items-center gap-0.5 text-amber-500">
+                      <Star className="w-3.5 h-3.5 fill-amber-400" />
+                      <Star className="w-3.5 h-3.5 fill-amber-400" />
+                      <Star className="w-3.5 h-3.5 fill-amber-400" />
+                    </span>
                   </span>
                 ) : examScore >= 60 ? (
-                  <span className="px-4 py-1.5 rounded-full bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 font-extrabold text-sm border border-sky-300">
-                    Predikat: Bagus Sekali! (Bintang Perak ⭐⭐)
+                  <span className="px-4 py-2 rounded-full bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 font-extrabold text-xs sm:text-sm flex items-center gap-2 border border-sky-300 dark:border-sky-800">
+                    <span>Predikat: Bagus Sekali! (Bintang Perak)</span>
+                    <span className="flex items-center gap-0.5 text-slate-400">
+                      <Star className="w-3.5 h-3.5 fill-slate-400" />
+                      <Star className="w-3.5 h-3.5 fill-slate-400" />
+                    </span>
                   </span>
                 ) : (
-                  <span className="px-4 py-1.5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-extrabold text-sm border border-amber-300">
-                    Predikat: Ayo Semangat Belajar Lagi! (Bintang Perunggu ⭐)
+                  <span className="px-4 py-2 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-extrabold text-xs sm:text-sm flex items-center gap-2 border border-amber-300 dark:border-amber-800">
+                    <span>Predikat: Semangat Belajar Lagi! (Bintang Perunggu)</span>
+                    <span className="flex items-center gap-0.5 text-amber-600">
+                      <Star className="w-3.5 h-3.5 fill-amber-600" />
+                    </span>
                   </span>
                 )}
               </div>
@@ -525,8 +542,9 @@ export const QuizArena: React.FC<QuizArenaProps> = ({ onEarnStar }) => {
                             Jawaban Benar: <strong>{q.options[q.correctAnswer]}</strong>
                           </p>
                         )}
-                        <p className="text-slate-500 dark:text-slate-400 text-[11px] pt-1 mt-1 border-t border-slate-200 dark:border-slate-800">
-                          💡 <strong>Trik Guru:</strong> {q.teacherTip}
+                        <p className="text-slate-500 dark:text-slate-400 text-[11px] pt-1 mt-1 border-t border-slate-200 dark:border-slate-800 flex items-center">
+                          <Lightbulb className="w-3.5 h-3.5 text-amber-500 mr-1 shrink-0" />
+                          <span><strong>Trik Guru:</strong> {q.teacherTip}</span>
                         </p>
                       </div>
                     </div>

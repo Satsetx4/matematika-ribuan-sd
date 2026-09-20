@@ -90,6 +90,17 @@ export const QUESTION_BANK: Question[] = [
     teacherTip: 'Selisih artinya bilangan yang besar dikurangi yang kecil: 6.000 - 60 = 5.940.',
     illustrationType: 'place-value'
   },
+  {
+    id: 'nt-07',
+    category: 'nilai-tempat',
+    difficulty: 'mudah',
+    question: 'Bilangan "Tujuh ribu lima ratus empat belas" jika ditulis dalam lambang bilangan adalah...',
+    options: ['7.514', '7.541', '7.054', '7.540'],
+    correctAnswer: 0,
+    explanation: '• Tujuh ribu = 7.000\n• Lima ratus = 500\n• Empat belas = 14\nJika digabungkan menjadi: 7.514.',
+    teacherTip: 'Perhatikan kata "empat belas" (14), bukan "empat puluh" (40)!',
+    illustrationType: 'place-value'
+  },
 
   // ==========================================
   // KATEGORI 2: MEMBANDINGKAN & MENGURUTKAN
@@ -299,6 +310,17 @@ export const QUESTION_BANK: Question[] = [
     teacherTip: 'Bilangan 7.590 memiliki angka ratusan 5, sehingga membulat naik menjadi 8.000.',
     illustrationType: 'rounding'
   },
+  {
+    id: 'pb-06',
+    category: 'pembulatan',
+    difficulty: 'sedang',
+    question: 'Bilangan 5.180 jika dibulatkan ke ribuan terdekat menjadi...',
+    options: ['5.000', '6.000', '5.200', '5.100'],
+    correctAnswer: 0,
+    explanation: 'Perhatikan angka ratusannya:\nPada 5.180, angka ratusan adalah 1.\nKarena 1 termasuk kelompok 0, 1, 2, 3, 4, maka dibulatkan TURUN.\nSehingga 5.180 dibulatkan menjadi 5.000.',
+    teacherTip: 'Angka ratusan 1 kecil (< 5), jadi dibulatkan meluncur ke bawah menjadi 5.000.',
+    illustrationType: 'rounding'
+  },
 
   // ==========================================
   // KATEGORI 5: DETEKTIF SOAL CERITA
@@ -367,6 +389,17 @@ export const QUESTION_BANK: Question[] = [
     correctAnswer: 0,
     explanation: 'Kembalian = Uang Diberikan - Harga Belanja\nRp5.000 - Rp2.750 = Rp2.250.\nJadi, kembalian Andi adalah Rp2.250.',
     teacherTip: 'Menghitung cepat: 5.000 - 2.000 = 3.000, lalu 3.000 - 750 = 2.250.',
+    illustrationType: 'story'
+  },
+  {
+    id: 'sc-07',
+    category: 'soal-cerita',
+    difficulty: 'sedang',
+    question: 'Sebuah perpustakaan keliling memiliki 3.420 buku dongeng dan 2.150 buku ilmu pengetahuan. Berapa jumlah seluruh buku di perpustakaan keliling tersebut?',
+    options: ['5.570 buku', '5.470 buku', '5.580 buku', '1.270 buku'],
+    correctAnswer: 0,
+    explanation: 'Langkah 4 Detektif:\n1. BACA: Ada buku dongeng dan buku pengetahuan.\n2. PIKIRKAN: Kata "jumlah seluruh" artinya operasi PENJUMLAHAN (+).\n3. HITUNG: 3.420 + 2.150 = 5.570.\n4. JAWAB: Jadi, jumlah seluruh buku di perpustakaan adalah 5.570 buku.',
+    teacherTip: 'Kata kunci "jumlah seluruh" adalah operasi PENJUMLAHAN (+). Hitung bersusun mulai dari satuan!',
     illustrationType: 'story'
   }
 ];

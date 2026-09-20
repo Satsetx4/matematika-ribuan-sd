@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TrendingUp, ShoppingBag, ArrowDownRight, ArrowUpRight, Sparkles, CheckCircle2, RotateCcw } from 'lucide-react';
+import { TrendingUp, ShoppingBag, ArrowDownRight, ArrowUpRight, Sparkles, CheckCircle2, RotateCcw, GraduationCap } from 'lucide-react';
 import { playClickSound, playSuccessSound } from '../utils/soundEffects';
 
 interface RoundingRollercoasterProps {
@@ -61,7 +61,8 @@ export const RoundingRollercoaster: React.FC<RoundingRollercoasterProps> = ({ on
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
           <div>
             <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <span>🎢</span> Simulator Rollercoaster Pembulatan
+              <TrendingUp className="w-5 h-5 text-purple-500" />
+              <span>Simulator Rollercoaster Pembulatan</span>
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Ketik angka ribuan atau pilih contoh dari buku materi
@@ -141,8 +142,10 @@ export const RoundingRollercoaster: React.FC<RoundingRollercoasterProps> = ({ on
                     className="absolute -top-7 transition-all duration-500 flex flex-col items-center"
                     style={{ left: `${(ratusan / 9) * 85}%` }}
                   >
-                    <span className="text-2xl">🎢</span>
-                    <span className="text-[10px] font-black px-1.5 py-0.2 rounded bg-purple-600 text-white">
+                    <div className="w-7 h-7 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-md">
+                      <TrendingUp className="w-4 h-4" />
+                    </div>
+                    <span className="text-[10px] font-black px-1.5 py-0.2 rounded bg-purple-700 text-white mt-0.5">
                       {ratusan}
                     </span>
                   </div>
@@ -173,7 +176,9 @@ export const RoundingRollercoaster: React.FC<RoundingRollercoasterProps> = ({ on
 
           {/* Teacher Rule Summary */}
           <div className="mt-8 p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-start gap-3">
-            <span className="text-xl">👩‍🏫</span>
+            <div className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 mt-0.5">
+              <GraduationCap className="w-4 h-4" />
+            </div>
             <div className="text-xs sm:text-sm text-slate-700 dark:text-slate-300">
               <strong>Penjelasan Guru:</strong> Pada bilangan <strong>{inputNumber.toLocaleString('id-ID')}</strong>, angka ratusannya adalah <strong>{ratusan}</strong>.
               {isRoundUp ? (

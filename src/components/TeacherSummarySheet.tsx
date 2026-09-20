@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Printer, BookOpen, CheckCircle, Lightbulb, Sparkles } from 'lucide-react';
+import { X, Printer, BookOpen, CheckCircle, Lightbulb, Sparkles, Plus, Minus } from 'lucide-react';
 import { CURRICULUM_MODULES, KEYWORDS_DICT } from '../data/curriculumData';
 import { playClickSound } from '../utils/soundEffects';
 
@@ -114,8 +114,9 @@ export const TeacherSummarySheet: React.FC<TeacherSummarySheetProps> = ({ isOpen
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800">
-                <span className="text-xs font-black uppercase text-emerald-800 dark:text-emerald-300 block mb-2">
-                  ➕ Kata Kunci Penjumlahan (Jumlah Bertambah):
+                <span className="text-xs font-black uppercase text-emerald-800 dark:text-emerald-300 flex items-center gap-1 mb-2">
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Kata Kunci Penjumlahan (Jumlah Bertambah):</span>
                 </span>
                 <ul className="text-xs space-y-1.5 text-slate-700 dark:text-slate-200">
                   {KEYWORDS_DICT.addition.map((item, i) => (
@@ -127,8 +128,9 @@ export const TeacherSummarySheet: React.FC<TeacherSummarySheetProps> = ({ isOpen
               </div>
 
               <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800">
-                <span className="text-xs font-black uppercase text-rose-800 dark:text-rose-300 block mb-2">
-                  ➖ Kata Kunci Pengurangan (Jumlah Berkurang / Sisa):
+                <span className="text-xs font-black uppercase text-rose-800 dark:text-rose-300 flex items-center gap-1 mb-2">
+                  <Minus className="w-3.5 h-3.5" />
+                  <span>Kata Kunci Pengurangan (Jumlah Berkurang / Sisa):</span>
                 </span>
                 <ul className="text-xs space-y-1.5 text-slate-700 dark:text-slate-200">
                   {KEYWORDS_DICT.subtraction.map((item, i) => (
@@ -143,8 +145,10 @@ export const TeacherSummarySheet: React.FC<TeacherSummarySheetProps> = ({ isOpen
 
           {/* 4 Golden Steps Summary */}
           <div className="p-5 rounded-2xl bg-amber-500/10 border-2 border-amber-500/40 text-center break-inside-avoid">
-            <h4 className="text-sm font-black uppercase tracking-wider text-amber-800 dark:text-amber-300 mb-2">
-              🌟 4 Langkah Emas Detektif Matematika 🌟
+            <h4 className="text-sm font-black uppercase tracking-wider text-amber-800 dark:text-amber-300 mb-2 flex items-center justify-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              <span>4 Langkah Emas Detektif Matematika</span>
+              <Sparkles className="w-4 h-4 text-amber-500" />
             </h4>
             <div className="flex flex-wrap items-center justify-center gap-3 text-xs font-extrabold text-slate-800 dark:text-white">
               <span className="px-3 py-1 rounded-full bg-white dark:bg-slate-800 shadow-xs">1. BACA Teliti</span>

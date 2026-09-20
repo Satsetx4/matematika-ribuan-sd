@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Volume2, Sparkles, CheckCircle2, RotateCcw, Lightbulb, ChevronRight } from 'lucide-react';
+import { Volume2, Sparkles, CheckCircle2, RotateCcw, Lightbulb, ChevronRight, Target } from 'lucide-react';
 import { playClickSound, playSuccessSound, playGentleWrongSound, speakIndonesian } from '../utils/soundEffects';
 
 interface PlaceValueLabProps {
@@ -178,8 +178,8 @@ export const PlaceValueLab: React.FC<PlaceValueLabProps> = ({ onEarnStar }) => {
         {/* Pronunciation banner */}
         <div className="mt-4 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/70 dark:border-amber-900/60 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-700 dark:text-amber-400 font-black">
-              🗣️
+            <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-700 dark:text-amber-400">
+              <Volume2 className="w-4 h-4" />
             </div>
             <div>
               <p className="text-xs font-bold text-amber-800/80 dark:text-amber-400 uppercase tracking-wider">Cara Membaca Bilangan</p>
@@ -337,8 +337,8 @@ export const PlaceValueLab: React.FC<PlaceValueLabProps> = ({ onEarnStar }) => {
       <div className="bg-gradient-to-br from-amber-500/10 via-white to-sky-500/10 dark:from-slate-900 dark:via-slate-900 dark:to-slate-850 border border-amber-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black">
-              🎯
+            <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center">
+              <Target className="w-4 h-4" />
             </div>
             <div>
               <h3 className="font-extrabold text-lg text-slate-900 dark:text-white">

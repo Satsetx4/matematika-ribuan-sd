@@ -29,7 +29,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, setActi
   ];
 
   return (
-    <nav className="w-full bg-slate-100/80 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800/80 overflow-x-auto no-scrollbar py-2 px-4">
+    <nav className="w-full bg-slate-100/90 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800/80 overflow-x-auto no-scrollbar py-2.5 px-3 sm:px-4 touch-pan-x scroll-smooth">
       <div className="max-w-7xl mx-auto flex items-center justify-start sm:justify-center gap-1.5 sm:gap-2 min-w-max">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -42,7 +42,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, setActi
                 playClickSound();
                 setActiveTab(tab.id);
               }}
-              className={`btn-tactile flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all relative ${
+              className={`btn-tactile flex items-center gap-2 px-3.5 py-2.5 min-h-[44px] rounded-xl text-xs sm:text-sm font-bold transition-all relative ${
                 isActive
                   ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm border border-slate-200 dark:border-slate-700'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/40'

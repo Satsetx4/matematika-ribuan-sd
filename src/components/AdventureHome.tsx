@@ -1,5 +1,4 @@
-import React from 'react';
-import { Sparkles, Trophy, Boxes, Scale, Calculator, TrendingUp, Search, ArrowRight, BookOpen, Star } from 'lucide-react';
+import { Sparkles, Trophy, Boxes, Scale, Calculator, TrendingUp, Search, ArrowRight, BookOpen, Star, Sprout } from 'lucide-react';
 import { ActiveTab } from './TabNavigation';
 import { playClickSound } from '../utils/soundEffects';
 
@@ -131,8 +130,8 @@ export const AdventureHome: React.FC<AdventureHomeProps> = ({
       {/* Teacher Encouragement & Motto (From PDF Hal 1 & 7) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-start gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-2xl shrink-0">
-            🌱
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+            <Sprout className="w-6 h-6" />
           </div>
           <div>
             <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">
@@ -145,8 +144,8 @@ export const AdventureHome: React.FC<AdventureHomeProps> = ({
         </div>
 
         <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-start gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl shrink-0">
-            ⭐
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <Star className="w-6 h-6 fill-emerald-500/30" />
           </div>
           <div>
             <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">

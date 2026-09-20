@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calculator, Plus, Minus, CheckCircle2, RotateCcw, ArrowRight, Sparkles, Lightbulb } from 'lucide-react';
+import { Calculator, Plus, Minus, CheckCircle2, RotateCcw, ArrowRight, Sparkles, Lightbulb, GraduationCap } from 'lucide-react';
 import { playClickSound, playSuccessSound, playGentleWrongSound } from '../utils/soundEffects';
 
 interface ColumnMathLabProps {
@@ -360,7 +360,9 @@ export const ColumnMathLab: React.FC<ColumnMathLabProps> = ({ onEarnStar }) => {
           {/* Teacher Step Narrative */}
           <div className="mt-6 w-full max-w-md p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-900/60">
             <div className="flex items-start gap-3">
-              <span className="text-xl">👩‍🏫</span>
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                <GraduationCap className="w-4 h-4" />
+              </div>
               <div>
                 <p className="text-xs font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
                   Penjelasan Guru Langkah #{currentStep === 0 ? 'Persiapan' : currentStep}:

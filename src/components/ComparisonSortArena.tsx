@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Scale, Train, ArrowUpDown, CheckCircle2, RotateCcw, Sparkles, ArrowRight } from 'lucide-react';
+import { Scale, Train, ArrowUpDown, CheckCircle2, RotateCcw, Sparkles, ArrowRight, Lightbulb } from 'lucide-react';
 import { playClickSound, playSuccessSound, playGentleWrongSound } from '../utils/soundEffects';
 
 interface ComparisonSortArenaProps {
@@ -137,7 +137,8 @@ export const ComparisonSortArena: React.FC<ComparisonSortArenaProps> = ({ onEarn
         <div className="flex items-center justify-between pb-6 border-b border-slate-100 dark:border-slate-800">
           <div>
             <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <span>⚖️</span> Timbangan Perbandingan Angka
+              <Scale className="w-5 h-5 text-sky-500" />
+              <span>Timbangan Perbandingan Angka</span>
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Gunakan tanda &gt; (lebih besar), &lt; (lebih kecil), atau = (sama dengan)
@@ -245,7 +246,7 @@ export const ComparisonSortArena: React.FC<ComparisonSortArenaProps> = ({ onEarn
         {/* Step-by-Step Reason Box */}
         <div className="mt-8 p-5 rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-900/60">
           <div className="flex items-start gap-3">
-            <span className="text-xl">💡</span>
+            <Lightbulb className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
             <div>
               <h4 className="font-extrabold text-sm text-sky-900 dark:text-sky-300">
                 Cara Mengetahuinya (Trik Guru Dari Kiri):
@@ -267,7 +268,7 @@ export const ComparisonSortArena: React.FC<ComparisonSortArenaProps> = ({ onEarn
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xl">🚂</span>
+              <Train className="w-5 h-5 text-purple-500" />
               <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
                 Gerbong Kereta Pengurut Angka
               </h3>
@@ -325,7 +326,7 @@ export const ComparisonSortArena: React.FC<ComparisonSortArenaProps> = ({ onEarn
             {/* Locomotive Head */}
             <div className="flex flex-col items-center">
               <div className="w-20 h-24 rounded-2xl bg-gradient-to-t from-slate-800 to-slate-700 dark:from-slate-700 dark:to-slate-600 text-white flex flex-col items-center justify-center shadow-md relative">
-                <span className="text-2xl">🚂</span>
+                <Train className="w-8 h-8 text-amber-400" />
                 <span className="text-[10px] font-black tracking-widest text-amber-400 uppercase mt-1">LOKO</span>
                 {/* Smokestack */}
                 <div className="absolute -top-3 left-4 w-3 h-3 bg-slate-600 rounded-t-sm" />

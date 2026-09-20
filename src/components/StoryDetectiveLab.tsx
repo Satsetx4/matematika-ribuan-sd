@@ -209,7 +209,8 @@ export const StoryDetectiveLab: React.FC<StoryDetectiveLabProps> = ({ onEarnStar
         <div className="mt-6 p-5 sm:p-6 rounded-3xl bg-rose-50/50 dark:bg-rose-950/20 border-2 border-rose-200 dark:border-rose-900/60 relative">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-black uppercase tracking-wider text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
-              <span>📖</span> Teks Soal Cerita
+              <BookOpen className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+              <span>Teks Soal Cerita</span>
             </span>
             <button
               onClick={() => handleSpeak(selectedCase.storyText)}
