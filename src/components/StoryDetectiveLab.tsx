@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Search, Volume2, CheckCircle2, ArrowRight, Sparkles, BookOpen, Brain, Calculator, Award } from 'lucide-react';
-import { playClickSound, playSuccessSound, speakIndonesian } from '../utils/soundEffects';
+import { Search, Volume2, CheckCircle2, ArrowRight, BookOpen, Brain, Calculator, Award } from 'lucide-react';
+import { playClickSound, playSuccessSound, playGentleWrongSound, speakIndonesian } from '../utils/soundEffects';
 
 interface StoryDetectiveLabProps {
-  onEarnStar: () => void;
+  onCompleteActivity: (activityId: string) => void;
 }
 
 interface StoryCase {
@@ -20,7 +20,7 @@ interface StoryCase {
   finalAnswer: string;
 }
 
-export const StoryDetectiveLab: React.FC<StoryDetectiveLabProps> = ({ onEarnStar }) => {
+export const StoryDetectiveLab: React.FC<StoryDetectiveLabProps> = ({ onCompleteActivity }) => {
   const storyCases: StoryCase[] = [
     {
       id: 'case-1',
@@ -99,6 +99,30 @@ export const StoryDetectiveLab: React.FC<StoryDetectiveLabProps> = ({ onEarnStar
   const [selectedCase, setSelectedCase] = useState<StoryCase>(storyCases[0]);
   const [activeStep, setActiveStep] = useState<number>(1);
   const [speaking, setSpeaking] = useState(false);
+  const [selectedKnown, setSelectedKnown] = useState<string[]>([]);
+  const [askedChoice, setAskedChoice] = useState('');
+  const [operationChoice, setOperationChoice] = useState('');
+  const [thinkingFeedback, setThinkingFeedback] = useState<'correct' | 'wrong' | null>(null);
+  const [thinkingVerified, setThinkingVerified] = useState(false);
+
+  const knownOptions = [...new Set([
+    ...selectedCase.known,
+    ...storyCases.flatMap((storyCase) => storyCase.known).filter((fact) => !selectedCase.known.includes(fact)).slice(0, 2),
+  ])];
+  const askedOptions = [...new Set([
+    selectedCase.asked,
+    ...storyCases.map((storyCase) => storyCase.asked).filter((question) => question !== selectedCase.asked).slice(0, 2),
+  ])];
+  const expectedOperations = [selectedCase.step1Formula, selectedCase.step2Formula]
+    .filter((formula): formula is string => Boolean(formula))
+    .map((formula) => formula.includes('+') ? '+' : '-')
+    .join(',');
+  const operationOptions = [
+    { value: '+', label: 'Penjumlahan' },
+    { value: '-', label: 'Pengurangan' },
+    { value: '+,-', label: 'Penjumlahan lalu pengurangan' },
+    { value: '-,+', label: 'Pengurangan lalu penjumlahan' },
+  ];
 
   const handleSpeak = (text: string) => {
     setSpeaking(true);
@@ -109,15 +133,31 @@ export const StoryDetectiveLab: React.FC<StoryDetectiveLabProps> = ({ onEarnStar
     playClickSound();
     setSelectedCase(c);
     setActiveStep(1);
+    setSelectedKnown([]);
+    setAskedChoice('');
+    setOperationChoice('');
+    setThinkingFeedback(null);
+    setThinkingVerified(false);
+  };
+
+  const checkThinking = () => {
+    playClickSound();
+    const knownCorrect = selectedKnown.length === selectedCase.known.length
+      && selectedCase.known.every((fact) => selectedKnown.includes(fact));
+    const answersCorrect = knownCorrect && askedChoice === selectedCase.asked && operationChoice === expectedOperations;
+    setThinkingFeedback(answersCorrect ? 'correct' : 'wrong');
+    setThinkingVerified(answersCorrect);
+    if (answersCorrect) playSuccessSound();
+    else playGentleWrongSound();
   };
 
   const handleNextStep = () => {
     playClickSound();
     if (activeStep < 4) {
       setActiveStep(activeStep + 1);
-      if (activeStep + 1 === 4) {
+      if (activeStep + 1 === 4 && thinkingVerified) {
         playSuccessSound();
-        onEarnStar();
+        onCompleteActivity(`story-problem-${selectedCase.id}`);
       }
     }
   };
@@ -146,8 +186,10 @@ export const StoryDetectiveLab: React.FC<StoryDetectiveLabProps> = ({ onEarnStar
         {storyCases.map((c) => (
           <button
             key={c.id}
+            type="button"
+            aria-pressed={selectedCase.id === c.id}
             onClick={() => handleCaseChange(c)}
-            className={`btn-tactile text-xs sm:text-sm font-extrabold px-4 py-2 rounded-2xl border transition-all ${
+            className={`btn-tactile min-h-11 text-xs sm:text-sm font-extrabold px-4 py-2 rounded-2xl border transition-all ${
               selectedCase.id === c.id
                 ? 'bg-rose-500 text-white border-rose-600 shadow-md shadow-rose-500/20'
                 : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-100'
@@ -174,13 +216,10 @@ export const StoryDetectiveLab: React.FC<StoryDetectiveLabProps> = ({ onEarnStar
             const isDone = activeStep > s.step;
 
             return (
-              <button
+              <div
                 key={s.step}
-                onClick={() => {
-                  playClickSound();
-                  setActiveStep(s.step);
-                }}
-                className={`btn-tactile text-left p-3 rounded-2xl border-2 transition-all ${
+                aria-current={isCurrent ? 'step' : undefined}
+                className={`text-left p-3 rounded-2xl border-2 ${
                   isCurrent
                     ? 'border-rose-500 bg-rose-500/10 text-rose-700 dark:text-rose-300'
                     : isDone
@@ -200,7 +239,7 @@ export const StoryDetectiveLab: React.FC<StoryDetectiveLabProps> = ({ onEarnStar
                 <div className="text-[11px] text-slate-500 dark:text-slate-400">
                   {s.desc}
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>
@@ -214,7 +253,8 @@ export const StoryDetectiveLab: React.FC<StoryDetectiveLabProps> = ({ onEarnStar
             </span>
             <button
               onClick={() => handleSpeak(selectedCase.storyText)}
-              className="btn-tactile flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 shadow-xs"
+              aria-label="Dengarkan soal cerita"
+              className="btn-tactile min-h-11 flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 shadow-xs"
             >
               <Volume2 className={`w-3.5 h-3.5 ${speaking ? 'animate-bounce text-rose-500' : ''}`} />
               <span>Dengarkan Suara Guru</span>
@@ -226,24 +266,17 @@ export const StoryDetectiveLab: React.FC<StoryDetectiveLabProps> = ({ onEarnStar
           </p>
 
           {/* Keyword tags highlight */}
-          <div className="mt-4 flex flex-wrap items-center gap-2 pt-3 border-t border-rose-200 dark:border-rose-900">
-            <span className="text-xs font-bold text-slate-400">Kata Kunci Ditemukan:</span>
-            {selectedCase.keywords.map((k, idx) => (
-              <span
-                key={idx}
-                className={`text-xs px-2.5 py-1 rounded-full font-black flex items-center gap-1 border shadow-xs ${
-                  k.op === '+'
-                    ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
-                    : 'bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-800'
-                }`}
-              >
-                <span>{k.word}</span>
-                <span className="text-xs font-black px-1 rounded bg-white/70 dark:bg-black/30">
-                  {k.op === '+' ? 'Penjumlahan (+)' : 'Pengurangan (-)'}
+          {activeStep >= 3 && thinkingVerified && (
+            <div className="mt-4 flex flex-wrap items-center gap-2 pt-3 border-t border-rose-200 dark:border-rose-900">
+              <span className="text-xs font-bold text-slate-500">Petunjuk kata dari konteks, bukan aturan mutlak:</span>
+              {selectedCase.keywords.map((k, idx) => (
+                <span key={idx} className="text-xs px-2.5 py-1 rounded-full font-black flex items-center gap-1 border shadow-xs bg-white/80 dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700">
+                  <span>{k.word}</span>
+                  <span className="text-xs font-black px-1 rounded bg-slate-100 dark:bg-black/30">{k.op === '+' ? 'sering terkait +' : 'sering terkait −'}</span>
                 </span>
-              </span>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Step-by-Step Detective Content */}
@@ -267,25 +300,69 @@ export const StoryDetectiveLab: React.FC<StoryDetectiveLabProps> = ({ onEarnStar
 
           {/* STEP 2: PIKIRKAN */}
           {activeStep === 2 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fadeIn">
-              <div className="p-5 rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-900">
-                <h4 className="font-extrabold text-sm text-sky-900 dark:text-sky-300 mb-2">
-                  Apa yang DIKETAHUI?
-                </h4>
-                <ul className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 space-y-1.5 list-disc pl-5 font-semibold">
-                  {selectedCase.known.map((item, i) => (
-                    <li key={i}>{item}</li>
-                  ))}
-                </ul>
-              </div>
+            <div className="space-y-4 animate-fadeIn">
+              <fieldset className="p-5 rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-900">
+                <legend className="px-1 font-extrabold text-sm text-sky-900 dark:text-sky-300">Apa saja yang DIKETAHUI?</legend>
+                <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {knownOptions.map((fact) => {
+                    const isSelected = selectedKnown.includes(fact);
+                    return (
+                      <button
+                        key={fact}
+                        type="button"
+                        aria-pressed={isSelected}
+                        onClick={() => {
+                          setSelectedKnown((current) => isSelected ? current.filter((item) => item !== fact) : [...current, fact]);
+                          setThinkingFeedback(null);
+                          setThinkingVerified(false);
+                        }}
+                        className={`btn-tactile min-h-11 rounded-xl border px-3 py-2 text-left text-sm font-semibold ${isSelected ? 'border-sky-500 bg-sky-100 text-sky-950 dark:bg-sky-900 dark:text-white' : 'border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'}`}
+                      >
+                        {fact}
+                      </button>
+                    );
+                  })}
+                </div>
+              </fieldset>
 
-              <div className="p-5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900">
-                <h4 className="font-extrabold text-sm text-amber-900 dark:text-amber-300 mb-2">
-                  Apa yang DITANYAKAN?
-                </h4>
-                <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-bold">
-                  {selectedCase.asked}
-                </p>
+              <fieldset className="p-5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900">
+                <legend className="px-1 font-extrabold text-sm text-amber-900 dark:text-amber-300">Apa yang DITANYAKAN?</legend>
+                <div className="mt-2 grid grid-cols-1 gap-2">
+                  {askedOptions.map((question) => (
+                    <button
+                      key={question}
+                      type="button"
+                      aria-pressed={askedChoice === question}
+                      onClick={() => { setAskedChoice(question); setThinkingFeedback(null); setThinkingVerified(false); }}
+                      className={`btn-tactile min-h-11 rounded-xl border px-3 py-2 text-left text-sm font-semibold ${askedChoice === question ? 'border-amber-500 bg-amber-100 text-amber-950 dark:bg-amber-900 dark:text-white' : 'border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'}`}
+                    >
+                      {question}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+
+              <fieldset className="p-5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900">
+                <legend className="px-1 font-extrabold text-sm text-emerald-900 dark:text-emerald-300">Operasi mana yang membantu menjawabnya?</legend>
+                <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {operationOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      aria-pressed={operationChoice === option.value}
+                      onClick={() => { setOperationChoice(option.value); setThinkingFeedback(null); setThinkingVerified(false); }}
+                      className={`btn-tactile min-h-11 rounded-xl border px-3 py-2 text-left text-sm font-semibold ${operationChoice === option.value ? 'border-emerald-500 bg-emerald-100 text-emerald-950 dark:bg-emerald-900 dark:text-white' : 'border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'}`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <button type="button" onClick={checkThinking} className="btn-tactile min-h-11 rounded-xl bg-rose-500 px-5 py-2 font-extrabold text-white">Periksa Pilihan</button>
+                {thinkingFeedback === 'wrong' && <p role="status" className="text-sm font-semibold text-rose-700 dark:text-rose-300">Belum tepat. Baca lagi cerita dan pikirkan apa yang diketahui serta ditanyakan.</p>}
+                {thinkingFeedback === 'correct' && <p role="status" className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">Tepat. Kata dalam cerita bisa menjadi petunjuk, tetapi makna seluruh konteks yang menentukan operasi.</p>}
               </div>
             </div>
           )}
@@ -329,7 +406,7 @@ export const StoryDetectiveLab: React.FC<StoryDetectiveLabProps> = ({ onEarnStar
               </p>
               <div className="mt-4 flex items-center justify-center gap-2 text-xs font-bold text-emerald-700 dark:text-emerald-400">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                <span>Misi Detektif Selesai! (+1 Bintang)</span>
+                <span>Kasus selesai. Kamu telah membaca, memilih operasi, menghitung, dan menjawab.</span>
               </div>
             </div>
           )}
@@ -344,15 +421,16 @@ export const StoryDetectiveLab: React.FC<StoryDetectiveLabProps> = ({ onEarnStar
               playClickSound();
               setActiveStep(activeStep - 1);
             }}
-            className="btn-tactile text-xs font-bold px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 disabled:opacity-30 border border-slate-200 dark:border-slate-700"
+            className="btn-tactile min-h-11 text-xs font-bold px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 disabled:opacity-30 border border-slate-200 dark:border-slate-700"
           >
             ← Kembali
           </button>
 
           {activeStep < 4 ? (
             <button
+              disabled={activeStep === 2 && !thinkingVerified}
               onClick={handleNextStep}
-              className="btn-tactile flex items-center gap-1.5 px-6 py-2.5 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-rose-500/25"
+              className="btn-tactile min-h-11 flex items-center gap-1.5 px-6 py-2.5 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-rose-500/25 disabled:opacity-40"
             >
               <span>Lanjut ke Langkah #{activeStep + 1}</span>
               <ArrowRight className="w-4 h-4" />
@@ -360,10 +438,9 @@ export const StoryDetectiveLab: React.FC<StoryDetectiveLabProps> = ({ onEarnStar
           ) : (
             <button
               onClick={() => {
-                playClickSound();
-                setActiveStep(1);
+                handleCaseChange(selectedCase);
               }}
-              className="btn-tactile text-xs font-bold px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+              className="btn-tactile min-h-11 text-xs font-bold px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
             >
               Ulangi Kasus Ini
             </button>

@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Volume2, Sparkles, CheckCircle2, RotateCcw, Lightbulb, ChevronRight, Target } from 'lucide-react';
 import { playClickSound, playSuccessSound, playGentleWrongSound, speakIndonesian } from '../utils/soundEffects';
+import { NumberInput } from './ui/NumberInput';
+import { getPlaceValue, type Place } from '../domain/math/placeValue';
 
 interface PlaceValueLabProps {
-  onEarnStar: () => void;
+  onCompleteActivity: (activityId: string) => void;
 }
 
-export const PlaceValueLab: React.FC<PlaceValueLabProps> = ({ onEarnStar }) => {
+export const PlaceValueLab: React.FC<PlaceValueLabProps> = ({ onCompleteActivity }) => {
   const [currentNumber, setCurrentNumber] = useState<number>(3625);
   const [speaking, setSpeaking] = useState(false);
 
@@ -95,9 +97,11 @@ export const PlaceValueLab: React.FC<PlaceValueLabProps> = ({ onEarnStar }) => {
   const checkAnswer = (val: number) => {
     setChallengeAnswer(val);
     setIsAnswered(true);
-    if (val === challengeTarget.value) {
+    const placeMap: Record<string, Place> = { Ribuan: 'thousands', Ratusan: 'hundreds', Puluhan: 'tens', Satuan: 'ones', ribuan: 'thousands', ratusan: 'hundreds', puluhan: 'tens', satuan: 'ones' };
+    const correctValue = getPlaceValue(challengeTarget.num, placeMap[challengeTarget.placeName]);
+    if (val === correctValue) {
       playSuccessSound();
-      onEarnStar();
+      onCompleteActivity(`place-value-${challengeTarget.num}-${challengeTarget.targetDigit}`);
     } else {
       playGentleWrongSound();
     }
@@ -126,25 +130,23 @@ export const PlaceValueLab: React.FC<PlaceValueLabProps> = ({ onEarnStar }) => {
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
           <div>
-            <label className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Ketik atau Pilih Bilangan Ribuan:
-            </label>
             <div className="flex items-center gap-3 mt-1">
-              <input
-                type="number"
+              <NumberInput
+                key={currentNumber}
+                id="place-value-number"
+                label="Ketik atau Pilih Bilangan Ribuan"
+                value={currentNumber}
                 min={1000}
                 max={9999}
-                value={currentNumber}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value) || 1000;
-                  setCurrentNumber(Math.min(9999, Math.max(1000, val)));
-                }}
+                onCommit={setCurrentNumber}
+                labelClassName="text-xs font-bold uppercase tracking-wider text-slate-400"
                 className="text-3xl sm:text-4xl font-black text-amber-600 dark:text-amber-400 tracking-wider bg-slate-50 dark:bg-slate-800 px-4 py-1.5 rounded-2xl border border-slate-300 dark:border-slate-700 w-44 text-center focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
               <button
                 onClick={() => handleSpeak(`Bilangan ${currentNumber} dibaca: ${capitalizedWords}`)}
-                className="btn-tactile p-3 rounded-2xl bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900 border border-amber-300 dark:border-amber-800"
+                className="btn-tactile min-h-11 min-w-11 p-2 rounded-2xl bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900 border border-amber-300 dark:border-amber-800"
                 title="Dengarkan Cara Membaca Bilangan"
+                aria-label="Dengarkan cara membaca bilangan"
               >
                 <Volume2 className={`w-5 h-5 ${speaking ? 'animate-bounce text-amber-500' : ''}`} />
               </button>
@@ -162,7 +164,7 @@ export const PlaceValueLab: React.FC<PlaceValueLabProps> = ({ onEarnStar }) => {
                     playClickSound();
                     setCurrentNumber(preset);
                   }}
-                  className={`btn-tactile px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  className={`btn-tactile min-h-11 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                     currentNumber === preset
                       ? 'bg-amber-500 text-white shadow-sm scale-105'
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
@@ -334,7 +336,7 @@ export const PlaceValueLab: React.FC<PlaceValueLabProps> = ({ onEarnStar }) => {
       </div>
 
       {/* Mini Interactive Practice Challenge */}
-      <div className="bg-gradient-to-br from-amber-500/10 via-white to-sky-500/10 dark:from-slate-900 dark:via-slate-900 dark:to-slate-850 border border-amber-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8">
+      <div className="bg-gradient-to-br from-amber-500/10 via-white to-sky-500/10 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 border border-amber-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center">
@@ -351,7 +353,7 @@ export const PlaceValueLab: React.FC<PlaceValueLabProps> = ({ onEarnStar }) => {
           </div>
           <button
             onClick={handleNextChallenge}
-            className="btn-tactile flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+            className="btn-tactile min-h-11 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Ganti Soal</span>
@@ -421,7 +423,7 @@ export const PlaceValueLab: React.FC<PlaceValueLabProps> = ({ onEarnStar }) => {
             </div>
             <button
               onClick={handleNextChallenge}
-              className="btn-tactile flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-xs"
+              className="btn-tactile min-h-11 flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-xs"
             >
               <span>Lanjut</span>
               <ChevronRight className="w-3.5 h-3.5" />

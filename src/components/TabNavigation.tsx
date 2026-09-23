@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Boxes, Scale, Calculator, TrendingUp, Search, Trophy, FileText } from 'lucide-react';
+import { Home, Boxes, Scale, Calculator, TrendingUp, Search, Trophy } from 'lucide-react';
 import { playClickSound } from '../utils/soundEffects';
 
 export type ActiveTab = 'home' | 'nilai-tempat' | 'banding-urut' | 'hitung-bersusun' | 'pembulatan' | 'soal-cerita' | 'kuis';
@@ -29,7 +29,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, setActi
   ];
 
   return (
-    <nav className="w-full bg-slate-100/90 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800/80 overflow-x-auto no-scrollbar py-2.5 px-3 sm:px-4 touch-pan-x scroll-smooth">
+    <nav aria-label="Navigasi materi" className="w-full bg-slate-100/90 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800/80 overflow-x-auto no-scrollbar py-2.5 px-3 sm:px-4 touch-pan-x scroll-smooth">
       <div className="max-w-7xl mx-auto flex items-center justify-start sm:justify-center gap-1.5 sm:gap-2 min-w-max">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -38,6 +38,8 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, setActi
           return (
             <button
               key={tab.id}
+              type="button"
+              aria-current={isActive ? 'page' : undefined}
               onClick={() => {
                 playClickSound();
                 setActiveTab(tab.id);

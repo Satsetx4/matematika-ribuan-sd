@@ -68,3 +68,106 @@
 .btn-tactile:active {
   transform: scale(0.96) translateY(1px);
 }
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeIn {
+  animation: fade-in 180ms ease-out both;
+}
+
+:focus-visible {
+  outline: 3px solid #f59e0b;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@page {
+  size: A4;
+  margin: 15mm;
+}
+
+@media print {
+  body,
+  #root {
+    min-height: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  #root > .app-shell {
+    display: block !important;
+    min-height: 0 !important;
+    background: #fff !important;
+  }
+
+  #root > .app-shell > :not(.print-sheet-overlay) {
+    display: none !important;
+  }
+
+  .print-sheet-overlay {
+    position: static !important;
+    display: block !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+    backdrop-filter: none !important;
+  }
+
+  .print-sheet {
+    width: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+    box-shadow: none !important;
+  }
+
+  .print-sheet * {
+    color: #000 !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+  }
+
+  .print-sheet button {
+    display: none !important;
+  }
+
+  .print-sheet-section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border-color: #cbd5e1 !important;
+    background: #fff !important;
+  }
+
+  .print-sheet h1,
+  .print-sheet h2,
+  .print-sheet h3 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+}

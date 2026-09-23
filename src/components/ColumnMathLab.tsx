@@ -1,16 +1,22 @@
 import React, { useState } from 'react';
-import { Calculator, Plus, Minus, CheckCircle2, RotateCcw, ArrowRight, Sparkles, Lightbulb, GraduationCap } from 'lucide-react';
+import { Calculator, Plus, Minus, CheckCircle2, RotateCcw, ArrowRight, GraduationCap } from 'lucide-react';
 import { playClickSound, playSuccessSound, playGentleWrongSound } from '../utils/soundEffects';
+import { explainSubtraction } from '../domain/math/subtraction';
+import { validateBoundedIntegerInput } from '../domain/math/numericInput';
+import { addNumbers } from '../domain/math/addition';
 
 interface ColumnMathLabProps {
-  onEarnStar: () => void;
+  onCompleteActivity: (activityId: string) => void;
 }
 
-export const ColumnMathLab: React.FC<ColumnMathLabProps> = ({ onEarnStar }) => {
+export const ColumnMathLab: React.FC<ColumnMathLabProps> = ({ onCompleteActivity }) => {
   type Operation = 'add' | 'subtract';
   const [operation, setOperation] = useState<Operation>('add');
   const [numA, setNumA] = useState<number>(2250);
   const [numB, setNumB] = useState<number>(1375);
+  const [answerDraft, setAnswerDraft] = useState('');
+  const [answerError, setAnswerError] = useState('');
+  const [answerFeedback, setAnswerFeedback] = useState<'correct' | 'wrong' | null>(null);
 
   // Step progression (0: ready, 1: satuan, 2: puluhan, 3: ratusan, 4: ribuan / done)
   const [currentStep, setCurrentStep] = useState<number>(0);
@@ -41,34 +47,46 @@ export const ColumnMathLab: React.FC<ColumnMathLabProps> = ({ onEarnStar }) => {
   const sumRib = a.rib + b.rib + carryRatToRib;
   const resRib = sumRib;
 
-  // Subtraction calculation logic with borrowing
-  // For subtraction we ensure numA >= numB
+  // Keep the larger value on top for a non-negative written subtraction.
   const finalNumA = operation === 'subtract' && numA < numB ? numB : numA;
   const finalNumB = operation === 'subtract' && numA < numB ? numA : numB;
-
   const fa = getDigits(finalNumA);
   const fb = getDigits(finalNumB);
+  const subtraction = operation === 'subtract' ? explainSubtraction(finalNumA, finalNumB) : null;
+  const visibleSubtractionDigits = currentStep > 0 && subtraction
+    ? subtraction.steps[currentStep - 1].digitsAfterBorrow
+    : subtraction?.initialDigits ?? [fa.rib, fa.rat, fa.pul, fa.sat];
+  const subtractionResults = subtraction
+    ? [subtraction.steps[3].resultDigit, subtraction.steps[2].resultDigit, subtraction.steps[1].resultDigit, subtraction.steps[0].resultDigit]
+    : [0, 0, 0, 0];
 
-  // Satuan borrow
-  const needBorrowSat = fa.sat < fb.sat;
-  const faSatVal = needBorrowSat ? fa.sat + 10 : fa.sat;
-  const subSat = faSatVal - fb.sat;
+  const expectedAnswer = operation === 'add' ? addNumbers(numA, numB) : finalNumA - finalNumB;
 
-  // Puluhan borrow
-  const faPulRemaining = needBorrowSat ? fa.pul - 1 : fa.pul;
-  const needBorrowPul = faPulRemaining < fb.pul;
-  const faPulVal = needBorrowPul ? faPulRemaining + 10 : faPulRemaining;
-  const subPul = faPulVal - fb.pul;
+  const resetAttempt = () => {
+    setCurrentStep(0);
+    setAnswerDraft('');
+    setAnswerError('');
+    setAnswerFeedback(null);
+  };
 
-  // Ratusan borrow
-  const faRatRemaining = needBorrowPul ? fa.rat - 1 : fa.rat;
-  const needBorrowRat = faRatRemaining < fb.rat;
-  const faRatVal = needBorrowRat ? faRatRemaining + 10 : faRatRemaining;
-  const subRat = faRatVal - fb.rat;
-
-  // Ribuan
-  const faRibRemaining = needBorrowRat ? fa.rib - 1 : fa.rib;
-  const subRib = faRibRemaining - fb.rib;
+  const handleCheckAnswer = () => {
+    playClickSound();
+    const parsed = validateBoundedIntegerInput(answerDraft, 0, 19998);
+    if (!parsed.valid) {
+      setAnswerError(parsed.message);
+      setAnswerFeedback(null);
+      return;
+    }
+    setAnswerError('');
+    if (parsed.value === expectedAnswer) {
+      setAnswerFeedback('correct');
+      setCurrentStep(1);
+      playSuccessSound();
+    } else {
+      setAnswerFeedback('wrong');
+      playGentleWrongSound();
+    }
+  };
 
   const handleNextStep = () => {
     playClickSound();
@@ -77,14 +95,14 @@ export const ColumnMathLab: React.FC<ColumnMathLabProps> = ({ onEarnStar }) => {
       setCurrentStep(next);
       if (next === 4) {
         playSuccessSound();
-        onEarnStar();
+        onCompleteActivity(operation === 'add' ? 'column-addition-01' : 'column-subtraction-01');
       }
     }
   };
 
   const handleReset = () => {
     playClickSound();
-    setCurrentStep(0);
+    resetAttempt();
   };
 
   const loadPreset = (op: Operation, top: number, bottom: number) => {
@@ -92,13 +110,13 @@ export const ColumnMathLab: React.FC<ColumnMathLabProps> = ({ onEarnStar }) => {
     setOperation(op);
     setNumA(top);
     setNumB(bottom);
-    setCurrentStep(0);
+    resetAttempt();
   };
 
   // Explanation notes for each step
   const getStepNarrative = () => {
     if (currentStep === 0) {
-      return 'Klik "Mulai Hitung Bersusun" untuk menghitung langkah demi langkah dari Satuan!';
+      return 'Coba hitung hasilnya dahulu. Setelah jawaban benar, kita telusuri langkah satuan sampai ribuan bersama-sama.';
     }
     if (operation === 'add') {
       if (currentStep === 1) {
@@ -120,24 +138,17 @@ export const ColumnMathLab: React.FC<ColumnMathLabProps> = ({ onEarnStar }) => {
         return `Langkah 4 (Ribuan): ${carryRatToRib > 0 ? `${carryRatToRib} (simpanan) + ` : ''}${a.rib} + ${b.rib} = ${resRib}. Hasil akhir adalah ${(numA + numB).toLocaleString('id-ID')}!`;
       }
     } else {
-      if (currentStep === 1) {
-        return `Langkah 1 (Satuan): ${fa.sat} - ${fb.sat}. ${
-          needBorrowSat ? `Karena angka atas lebih kecil, pinjam 1 puluhan (10) dari sebelah sehingga menjadi ${faSatVal} - ${fb.sat} = ${subSat}.` : `Hasil: ${subSat}.`
-        }`;
-      }
-      if (currentStep === 2) {
-        return `Langkah 2 (Puluhan): ${needBorrowSat ? `Angka puluhan tersisa ${faPulRemaining}. ` : ''}${
-          needBorrowPul ? `Pinjam 1 ratusan (10) sehingga menjadi ${faPulVal} - ${fb.pul} = ${subPul}.` : `${faPulRemaining} - ${fb.pul} = ${subPul}.`
-        }`;
-      }
-      if (currentStep === 3) {
-        return `Langkah 3 (Ratusan): ${needBorrowPul ? `Angka ratusan tersisa ${faRatRemaining}. ` : ''}${
-          needBorrowRat ? `Pinjam 1 ribuan sehingga menjadi ${faRatVal} - ${fb.rat} = ${subRat}.` : `${faRatRemaining} - ${fb.rat} = ${subRat}.`
-        }`;
-      }
-      if (currentStep === 4) {
-        return `Langkah 4 (Ribuan): ${needBorrowRat ? `Angka ribuan tersisa ${faRibRemaining}. ` : ''}${faRibRemaining} - ${fb.rib} = ${subRib}. Hasil akhir adalah ${(finalNumA - finalNumB).toLocaleString('id-ID')}!`;
-      }
+      const step = subtraction?.steps[currentStep - 1];
+      if (!step || !subtraction) return '';
+      const placeIndex: Record<string, number> = { ribuan: 0, ratusan: 1, puluhan: 2, satuan: 3 };
+      const transferNotes = step.borrowTransfers.map((transfer, index) => {
+        const before = index === 0 ? subtraction.initialDigits : step.borrowTransfers[index - 1].digits;
+        const fromIndex = placeIndex[transfer.from];
+        const toIndex = placeIndex[transfer.to];
+        return `Pinjam 1 ${transfer.from} ke ${transfer.to}: ${transfer.from} berubah dari ${before[fromIndex]} menjadi ${transfer.digits[fromIndex]}, ${transfer.to} berubah dari ${before[toIndex]} menjadi ${transfer.digits[toIndex]}.`;
+      });
+      const explanation = transferNotes.length ? `${transferNotes.join(' ')} ` : '';
+      return `Langkah ${currentStep} (${step.place}): ${explanation}${step.topDigit} - ${step.bottomDigit} = ${step.resultDigit}.`;
     }
     return '';
   };
@@ -173,9 +184,9 @@ export const ColumnMathLab: React.FC<ColumnMathLabProps> = ({ onEarnStar }) => {
               onClick={() => {
                 playClickSound();
                 setOperation('add');
-                setCurrentStep(0);
+                resetAttempt();
               }}
-              className={`btn-tactile flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs sm:text-sm font-extrabold transition-all ${
+              className={`btn-tactile min-h-11 flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs sm:text-sm font-extrabold transition-all ${
                 operation === 'add'
                   ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
@@ -188,9 +199,9 @@ export const ColumnMathLab: React.FC<ColumnMathLabProps> = ({ onEarnStar }) => {
               onClick={() => {
                 playClickSound();
                 setOperation('subtract');
-                setCurrentStep(0);
+                resetAttempt();
               }}
-              className={`btn-tactile flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs sm:text-sm font-extrabold transition-all ${
+              className={`btn-tactile min-h-11 flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs sm:text-sm font-extrabold transition-all ${
                 operation === 'subtract'
                   ? 'bg-rose-500 text-white shadow-md shadow-rose-500/20'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
@@ -206,25 +217,25 @@ export const ColumnMathLab: React.FC<ColumnMathLabProps> = ({ onEarnStar }) => {
             <span className="text-xs font-bold text-slate-400 mr-1">Contoh Buku:</span>
             <button
               onClick={() => loadPreset('add', 2250, 1375)}
-              className="btn-tactile text-xs font-bold px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-emerald-100 dark:hover:bg-emerald-950 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+              className="btn-tactile min-h-11 text-xs font-bold px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-emerald-100 dark:hover:bg-emerald-950 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
             >
               2.250 + 1.375
             </button>
             <button
               onClick={() => loadPreset('add', 2346, 1527)}
-              className="btn-tactile text-xs font-bold px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-emerald-100 dark:hover:bg-emerald-950 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+              className="btn-tactile min-h-11 text-xs font-bold px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-emerald-100 dark:hover:bg-emerald-950 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
             >
               2.346 + 1.527
             </button>
             <button
               onClick={() => loadPreset('subtract', 8500, 1375)}
-              className="btn-tactile text-xs font-bold px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-100 dark:hover:bg-rose-950 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+              className="btn-tactile min-h-11 text-xs font-bold px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-100 dark:hover:bg-rose-950 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
             >
               8.500 - 1.375
             </button>
             <button
               onClick={() => loadPreset('subtract', 7245, 2138)}
-              className="btn-tactile text-xs font-bold px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-100 dark:hover:bg-rose-950 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+              className="btn-tactile min-h-11 text-xs font-bold px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-100 dark:hover:bg-rose-950 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
             >
               7.245 - 2.138
             </button>
@@ -233,6 +244,48 @@ export const ColumnMathLab: React.FC<ColumnMathLabProps> = ({ onEarnStar }) => {
 
         {/* Step-by-Step Interactive Board */}
         <div className="mt-8 flex flex-col items-center">
+
+          {currentStep === 0 && (
+            <form
+              className="mb-6 w-full max-w-md rounded-2xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50/70 dark:bg-emerald-950/30 p-4"
+              onSubmit={(event) => {
+                event.preventDefault();
+                handleCheckAnswer();
+              }}
+            >
+              <label htmlFor="column-answer" className="block text-sm font-extrabold text-slate-900 dark:text-white">
+                Tantangan: berapa hasil hitungnya?
+              </label>
+              <p className="mt-1 text-base font-black text-emerald-800 dark:text-emerald-200">
+                {finalNumA.toLocaleString('id-ID')} {operation === 'add' ? '+' : '−'} {finalNumB.toLocaleString('id-ID')}
+              </p>
+              <div className="mt-3 flex gap-2">
+                <input
+                  id="column-answer"
+                  aria-label="Jawaban tantangan hitung"
+                  type="text"
+                  inputMode="numeric"
+                  value={answerDraft}
+                  onChange={(event) => {
+                    setAnswerDraft(event.target.value);
+                    setAnswerError('');
+                    setAnswerFeedback(null);
+                  }}
+                  aria-describedby={answerError ? 'column-answer-error' : undefined}
+                  aria-invalid={answerError ? 'true' : undefined}
+                  className="min-h-11 min-w-0 flex-1 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-base font-bold"
+                />
+                <button type="submit" className="btn-tactile min-h-11 rounded-xl bg-emerald-600 px-4 font-extrabold text-white">Periksa</button>
+              </div>
+              {answerError && <p id="column-answer-error" role="alert" className="mt-2 text-xs font-semibold text-rose-600">{answerError}</p>}
+              {answerFeedback === 'wrong' && <p role="status" className="mt-2 text-xs font-semibold text-rose-700 dark:text-rose-300">Belum tepat. Coba hitung lagi dari kolom satuan.</p>}
+            </form>
+          )}
+          {answerFeedback === 'correct' && currentStep > 0 && (
+            <p role="status" className="mb-4 w-full max-w-md rounded-xl bg-emerald-100 dark:bg-emerald-950/60 p-3 text-sm font-bold text-emerald-800 dark:text-emerald-200">
+              Jawaban benar. Sekarang ikuti prosesnya dari satuan.
+            </p>
+          )}
           
           {/* The Arithmetic Grid */}
           <div className="bg-slate-50 dark:bg-slate-800/80 border-2 border-slate-200 dark:border-slate-700 rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-inner">
@@ -245,31 +298,16 @@ export const ColumnMathLab: React.FC<ColumnMathLabProps> = ({ onEarnStar }) => {
               <span className="text-rose-600 dark:text-rose-400">Satuan</span>
             </div>
 
-            {/* Carry / Borrow Indicators Row */}
-            <div className="grid grid-cols-4 gap-2 text-center h-8 items-center mb-1">
-              {operation === 'add' ? (
-                <>
-                  <div className="text-xs font-black text-amber-500">{currentStep >= 4 && carryRatToRib > 0 ? `+${carryRatToRib}` : ''}</div>
-                  <div className="text-xs font-black text-sky-500">{currentStep >= 3 && carryPulToRat > 0 ? `+${carryPulToRat}` : ''}</div>
-                  <div className="text-xs font-black text-emerald-500">{currentStep >= 2 && carrySatToPul > 0 ? `+${carrySatToPul}` : ''}</div>
-                  <div className="text-xs font-black text-slate-400">-</div>
-                </>
-              ) : (
-                <>
-                  <div className="text-xs font-black text-amber-500">{currentStep >= 4 && needBorrowRat ? `(${faRibRemaining})` : ''}</div>
-                  <div className="text-xs font-black text-sky-500">{currentStep >= 3 && needBorrowRat ? `(${faRatVal})` : ''}</div>
-                  <div className="text-xs font-black text-emerald-500">{currentStep >= 2 && needBorrowPul ? `(${faPulVal})` : ''}</div>
-                  <div className="text-xs font-black text-rose-500">{currentStep >= 1 && needBorrowSat ? `(${faSatVal})` : ''}</div>
-                </>
-              )}
-            </div>
+            {operation === 'subtract' && currentStep > 0 && (
+              <p className="mb-1 text-center text-[10px] font-bold text-slate-500 dark:text-slate-400">Angka atas setelah peminjaman · ribuan ke satuan</p>
+            )}
 
             {/* Top Number Row */}
             <div className="grid grid-cols-4 gap-2 text-center text-3xl font-black text-slate-900 dark:text-white py-1">
-              <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">{operation === 'add' ? a.rib : fa.rib}</div>
-              <div className="p-2 rounded-xl bg-sky-500/10 border border-sky-500/20">{operation === 'add' ? a.rat : fa.rat}</div>
-              <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">{operation === 'add' ? a.pul : fa.pul}</div>
-              <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20">{operation === 'add' ? a.sat : fa.sat}</div>
+              <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">{operation === 'add' ? a.rib : visibleSubtractionDigits[0]}</div>
+              <div className="p-2 rounded-xl bg-sky-500/10 border border-sky-500/20">{operation === 'add' ? a.rat : visibleSubtractionDigits[1]}</div>
+              <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">{operation === 'add' ? a.pul : visibleSubtractionDigits[2]}</div>
+              <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20">{operation === 'add' ? a.sat : visibleSubtractionDigits[3]}</div>
             </div>
 
             {/* Bottom Number Row with Operation Sign */}
@@ -297,7 +335,7 @@ export const ColumnMathLab: React.FC<ColumnMathLabProps> = ({ onEarnStar }) => {
                   ? 'bg-amber-500/20 border-amber-500 text-amber-600 dark:text-amber-400 scale-105'
                   : 'border-dashed border-slate-300 dark:border-slate-700 text-slate-300 dark:text-slate-600'
               }`}>
-                {currentStep >= 4 ? (operation === 'add' ? resRib : subRib) : '?'}
+                {currentStep >= 4 ? (operation === 'add' ? resRib : subtractionResults[0]) : '?'}
               </div>
 
               {/* Ratusan Result */}
@@ -306,7 +344,7 @@ export const ColumnMathLab: React.FC<ColumnMathLabProps> = ({ onEarnStar }) => {
                   ? 'bg-sky-500/20 border-sky-500 text-sky-600 dark:text-sky-400 scale-105'
                   : 'border-dashed border-slate-300 dark:border-slate-700 text-slate-300 dark:text-slate-600'
               }`}>
-                {currentStep >= 3 ? (operation === 'add' ? resRat : subRat) : '?'}
+                {currentStep >= 3 ? (operation === 'add' ? resRat : subtractionResults[1]) : '?'}
               </div>
 
               {/* Puluhan Result */}
@@ -315,7 +353,7 @@ export const ColumnMathLab: React.FC<ColumnMathLabProps> = ({ onEarnStar }) => {
                   ? 'bg-emerald-500/20 border-emerald-500 text-emerald-600 dark:text-emerald-400 scale-105'
                   : 'border-dashed border-slate-300 dark:border-slate-700 text-slate-300 dark:text-slate-600'
               }`}>
-                {currentStep >= 2 ? (operation === 'add' ? resPul : subPul) : '?'}
+                {currentStep >= 2 ? (operation === 'add' ? resPul : subtractionResults[2]) : '?'}
               </div>
 
               {/* Satuan Result */}
@@ -324,7 +362,7 @@ export const ColumnMathLab: React.FC<ColumnMathLabProps> = ({ onEarnStar }) => {
                   ? 'bg-rose-500/20 border-rose-500 text-rose-600 dark:text-rose-400 scale-105'
                   : 'border-dashed border-slate-300 dark:border-slate-700 text-slate-300 dark:text-slate-600'
               }`}>
-                {currentStep >= 1 ? (operation === 'add' ? resSat : subSat) : '?'}
+                {currentStep >= 1 ? (operation === 'add' ? resSat : subtractionResults[3]) : '?'}
               </div>
 
             </div>
@@ -335,24 +373,24 @@ export const ColumnMathLab: React.FC<ColumnMathLabProps> = ({ onEarnStar }) => {
           <div className="flex items-center gap-3 mt-6">
             <button
               onClick={handleReset}
-              className="btn-tactile flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-sm border border-slate-200 dark:border-slate-700"
+              className="btn-tactile min-h-11 flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-sm border border-slate-200 dark:border-slate-700"
             >
               <RotateCcw className="w-4 h-4" />
               <span>Ulangi</span>
             </button>
 
-            {currentStep < 4 ? (
+            {currentStep === 0 ? null : currentStep < 4 ? (
               <button
                 onClick={handleNextStep}
-                className="btn-tactile flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-sm shadow-md shadow-emerald-500/25"
+                className="btn-tactile min-h-11 flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-sm shadow-md shadow-emerald-500/25"
               >
-                <span>{currentStep === 0 ? 'Mulai Hitung Bersusun' : 'Langkah Berikutnya'}</span>
+                <span>Langkah Berikutnya</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             ) : (
               <div className="flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-emerald-500/20 border border-emerald-500 text-emerald-800 dark:text-emerald-300 font-extrabold text-sm">
                 <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                <span>Selesai! (+1 Bintang)</span>
+                <span>Misi hitung selesai!</span>
               </div>
             )}
           </div>

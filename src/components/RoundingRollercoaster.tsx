@@ -1,27 +1,64 @@
 import React, { useState } from 'react';
-import { TrendingUp, ShoppingBag, ArrowDownRight, ArrowUpRight, Sparkles, CheckCircle2, RotateCcw, GraduationCap } from 'lucide-react';
-import { playClickSound, playSuccessSound } from '../utils/soundEffects';
+import { TrendingUp, ShoppingBag, ArrowDownRight, ArrowUpRight, GraduationCap, Lightbulb } from 'lucide-react';
+import { playClickSound, playSuccessSound, playGentleWrongSound } from '../utils/soundEffects';
+import { NumberInput } from './ui/NumberInput';
+import { getRoundingDigit, roundToPlace } from '../domain/math/rounding';
 
 interface RoundingRollercoasterProps {
-  onEarnStar: () => void;
+  onCompleteActivity: (activityId: string) => void;
 }
 
-export const RoundingRollercoaster: React.FC<RoundingRollercoasterProps> = ({ onEarnStar }) => {
+const CHALLENGE_NUMBERS = [3241, 6782, 2315, 4620, 5180, 7590, 8925];
+
+export const RoundingRollercoaster: React.FC<RoundingRollercoasterProps> = ({ onCompleteActivity }) => {
   const [inputNumber, setInputNumber] = useState<number>(3241);
+  const [challengeIndex, setChallengeIndex] = useState(0);
+  const [challengeAnswer, setChallengeAnswer] = useState<number | null>(null);
+  const [challengeFeedback, setChallengeFeedback] = useState<'correct' | 'wrong' | null>(null);
 
   // Shopping Estimator state (From Page 7 PDF)
-  const [initialMoney, setInitialMoney] = useState<number>(6450);
-  const [itemCost, setItemCost] = useState<number>(2280);
+  const initialMoney = 6450;
+  const itemCost = 2280;
 
   // Rounding breakdown
   const ribuan = Math.floor(inputNumber / 1000);
-  const ratusan = Math.floor((inputNumber % 1000) / 100);
+  const ratusan = getRoundingDigit(inputNumber, 1000);
   const isRoundUp = ratusan >= 5;
-  const roundedResult = isRoundUp ? (ribuan + 1) * 1000 : ribuan * 1000;
+  const roundedResult = roundToPlace(inputNumber, 1000);
+
+  const challengeNumber = CHALLENGE_NUMBERS[challengeIndex];
+  const challengeHundreds = getRoundingDigit(challengeNumber, 1000);
+  const challengeResult = roundToPlace(challengeNumber, 1000);
+  const challengeOptions = [...new Set([
+    Math.floor(challengeNumber / 1000) * 1000,
+    challengeResult,
+    (Math.floor(challengeNumber / 1000) + 1) * 1000,
+  ])].sort((a, b) => a - b);
+
+  const handleChallengeSubmit = () => {
+    if (challengeAnswer === null) return;
+    playClickSound();
+    if (challengeAnswer === challengeResult) {
+      setChallengeFeedback('correct');
+      playSuccessSound();
+      onCompleteActivity(`rounding-${String(challengeIndex + 1).padStart(2, '0')}`);
+    } else {
+      setChallengeFeedback('wrong');
+      playGentleWrongSound();
+    }
+  };
+
+  const handleNextChallenge = () => {
+    if (challengeIndex >= CHALLENGE_NUMBERS.length - 1) return;
+    playClickSound();
+    setChallengeIndex((index) => index + 1);
+    setChallengeAnswer(null);
+    setChallengeFeedback(null);
+  };
 
   // Shopping estimation calculations
-  const roundedMoney = Math.round(initialMoney / 1000) * 1000;
-  const roundedCost = Math.round(itemCost / 1000) * 1000;
+  const roundedMoney = roundToPlace(initialMoney, 1000);
+  const roundedCost = roundToPlace(itemCost, 1000);
   const estimatedDiff = roundedMoney - roundedCost;
   const exactDiff = initialMoney - itemCost;
 
@@ -77,7 +114,7 @@ export const RoundingRollercoaster: React.FC<RoundingRollercoasterProps> = ({ on
                   playClickSound();
                   setInputNumber(p.num);
                 }}
-                className={`btn-tactile text-xs font-bold px-2.5 py-1 rounded-xl border transition-all ${
+                className={`btn-tactile min-h-11 text-xs font-bold px-2.5 py-1 rounded-xl border transition-all ${
                   inputNumber === p.num
                     ? 'bg-purple-500 text-white border-purple-600 shadow-sm'
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-purple-100'
@@ -99,12 +136,15 @@ export const RoundingRollercoaster: React.FC<RoundingRollercoasterProps> = ({ on
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">
                 Bilangan Awal:
               </span>
-              <input
-                type="number"
+              <NumberInput
+                key={inputNumber}
+                id="rounding-number"
+                label="Bilangan awal untuk simulator pembulatan"
                 min={1000}
                 max={9999}
                 value={inputNumber}
-                onChange={(e) => setInputNumber(parseInt(e.target.value) || 1000)}
+                onCommit={setInputNumber}
+                labelClassName="sr-only"
                 className="text-3xl sm:text-4xl font-black text-purple-600 dark:text-purple-400 bg-white dark:bg-slate-800 border-2 border-purple-300 dark:border-purple-700 px-4 py-2 rounded-2xl text-center w-48 shadow-sm focus:outline-none"
               />
               <div className="mt-2 text-xs font-bold text-slate-500 dark:text-slate-400">
@@ -182,9 +222,9 @@ export const RoundingRollercoaster: React.FC<RoundingRollercoasterProps> = ({ on
             <div className="text-xs sm:text-sm text-slate-700 dark:text-slate-300">
               <strong>Penjelasan Guru:</strong> Pada bilangan <strong>{inputNumber.toLocaleString('id-ID')}</strong>, angka ratusannya adalah <strong>{ratusan}</strong>.
               {isRoundUp ? (
-                <> Karena angka ratusan <strong>{ratusan} $\ge$ 5</strong>, maka dibulatkan <strong>NAIK</strong>. Angka ribuan {ribuan} ditambah 1 menjadi {ribuan + 1}, sehingga hasilnya adalah <strong>{roundedResult.toLocaleString('id-ID')}</strong>.</>
+                <> Karena angka ratusan <strong>{ratusan} ≥ 5</strong>, maka dibulatkan <strong>NAIK</strong>. Angka ribuan {ribuan} ditambah 1 menjadi {ribuan + 1}, sehingga hasilnya adalah <strong>{roundedResult.toLocaleString('id-ID')}</strong>.</>
               ) : (
-                <> Karena angka ratusan <strong>{ratusan} $\le$ 4</strong>, maka dibulatkan <strong>TURUN</strong>. Angka ribuan tetap {ribuan}, sehingga hasilnya adalah <strong>{roundedResult.toLocaleString('id-ID')}</strong>.</>
+                <> Karena angka ratusan <strong>{ratusan} ≤ 4</strong>, maka dibulatkan <strong>TURUN</strong>. Angka ribuan tetap {ribuan}, sehingga hasilnya adalah <strong>{roundedResult.toLocaleString('id-ID')}</strong>.</>
               )}
             </div>
           </div>
@@ -192,6 +232,55 @@ export const RoundingRollercoaster: React.FC<RoundingRollercoasterProps> = ({ on
         </div>
 
       </div>
+
+      {/* Tantangan pembulatan dengan jawaban aktif */}
+      <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm" aria-labelledby="rounding-challenge-title">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+            <Lightbulb className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 id="rounding-challenge-title" className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">Tantangan Pembulatan</h3>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Baca angkanya, tentukan hasil pembulatan ke ribuan terdekat, lalu periksa jawabanmu.</p>
+          </div>
+        </div>
+
+        <form className="mt-5" onSubmit={(event) => { event.preventDefault(); handleChallengeSubmit(); }}>
+          <p className="text-base font-extrabold text-slate-900 dark:text-white">
+            Misi {challengeIndex + 1} dari {CHALLENGE_NUMBERS.length}: bulatkan <span className="text-purple-700 dark:text-purple-300">{challengeNumber.toLocaleString('id-ID')}</span> ke ribuan terdekat.
+          </p>
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2" role="group" aria-label="Pilihan hasil pembulatan">
+            {challengeOptions.map((option) => (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={challengeAnswer === option}
+                disabled={challengeFeedback === 'correct'}
+                onClick={() => { setChallengeAnswer(option); setChallengeFeedback(null); }}
+                className={`btn-tactile min-h-11 rounded-xl border-2 px-4 py-2 font-extrabold ${challengeAnswer === option ? 'border-purple-500 bg-purple-100 text-purple-900 dark:bg-purple-950 dark:text-purple-100' : 'border-slate-200 bg-slate-50 text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100'}`}
+              >
+                {option.toLocaleString('id-ID')}
+              </button>
+            ))}
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <button type="submit" disabled={challengeAnswer === null || challengeFeedback === 'correct'} className="btn-tactile min-h-11 rounded-xl bg-purple-600 px-5 py-2 font-extrabold text-white disabled:opacity-50">Periksa Jawaban</button>
+            {challengeFeedback === 'wrong' && <p role="status" className="text-sm font-semibold text-rose-700 dark:text-rose-300">Belum tepat. Periksa angka ratusannya, lalu coba lagi.</p>}
+            {challengeFeedback === 'correct' && (
+              <p role="status" className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                Benar. Angka ratusannya {challengeHundreds}; {challengeHundreds >= 5 ? 'karena 5–9, ribuan dibulatkan naik' : 'karena 0–4, ribuan tetap'} menjadi {challengeResult.toLocaleString('id-ID')}.
+              </p>
+            )}
+          </div>
+        </form>
+
+        {challengeFeedback === 'correct' && challengeIndex < CHALLENGE_NUMBERS.length - 1 && (
+          <button type="button" onClick={handleNextChallenge} className="btn-tactile mt-4 min-h-11 rounded-xl bg-slate-100 px-4 py-2 font-bold text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700">Tantangan Berikutnya</button>
+        )}
+        {challengeFeedback === 'correct' && challengeIndex === CHALLENGE_NUMBERS.length - 1 && (
+          <p className="mt-4 text-sm font-bold text-emerald-700 dark:text-emerald-300">Semua tantangan selesai. Kamu dapat mengulang untuk berlatih.</p>
+        )}
+      </section>
 
       {/* 2. Kasir Belanja Pintar (Taksiran Sehari-hari Hal 7) */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm">

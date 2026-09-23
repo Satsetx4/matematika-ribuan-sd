@@ -4,13 +4,11 @@ import { playClickSound } from '../utils/soundEffects';
 
 interface AdventureHomeProps {
   setActiveTab: (tab: ActiveTab) => void;
-  starsCount: number;
   onOpenSummary: () => void;
 }
 
 export const AdventureHome: React.FC<AdventureHomeProps> = ({
   setActiveTab,
-  starsCount,
   onOpenSummary
 }) => {
   const stations = [
@@ -176,13 +174,15 @@ export const AdventureHome: React.FC<AdventureHomeProps> = ({
             const Icon = s.icon;
 
             return (
-              <div
+              <button
                 key={s.id}
+                type="button"
+                aria-label={`Masuk ke ${s.title}`}
                 onClick={() => {
                   playClickSound();
                   setActiveTab(s.id);
                 }}
-                className="btn-tactile bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm hover:shadow-md cursor-pointer flex flex-col justify-between group transition-all"
+                className="btn-tactile w-full min-h-44 text-left bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm hover:shadow-md flex flex-col justify-between group transition-all"
               >
                 <div>
                   <div className="flex items-center justify-between mb-4">
@@ -209,7 +209,7 @@ export const AdventureHome: React.FC<AdventureHomeProps> = ({
                   <span>Masuk Belajar</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>

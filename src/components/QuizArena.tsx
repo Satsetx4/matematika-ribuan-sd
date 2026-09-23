@@ -1,31 +1,41 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, CheckCircle2, XCircle, Lightbulb, RotateCcw, Award, Sparkles, Filter, ChevronRight, Volume2, HelpCircle, Star, GraduationCap, BookOpen } from 'lucide-react';
+import { Trophy, CheckCircle2, XCircle, Lightbulb, RotateCcw, Sparkles, Filter, ChevronRight, Volume2, GraduationCap, BookOpen } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { QUESTION_BANK, Question } from '../data/questionBank';
 import { playClickSound, playSuccessSound, playGentleWrongSound, playCelebrationFanfare, speakIndonesian } from '../utils/soundEffects';
+import { safeGetJson, safeSetItem, STORAGE_KEYS } from '../utils/storage';
+import { parseQuizSession, type QuizSession } from '../domain/quizSession';
 
 interface QuizArenaProps {
-  onEarnStar: () => void;
+  onCompleteActivity: (activityId: string, earnsStar?: boolean) => void;
+  bestQuizScore: number | null;
+  onRecordQuizScore: (score: number) => void;
 }
 
-export const QuizArena: React.FC<QuizArenaProps> = ({ onEarnStar }) => {
+export const QuizArena: React.FC<QuizArenaProps> = ({ onCompleteActivity, bestQuizScore, onRecordQuizScore }) => {
   type QuizView = 'practice' | 'exam';
-  const [viewMode, setViewMode] = useState<QuizView>('practice');
+  const [initialSession] = useState(() => parseQuizSession(
+    safeGetJson<unknown>(STORAGE_KEYS.QUIZ_SESSION, null),
+    new Set(QUESTION_BANK.map((question) => question.id)),
+  ));
+  const [viewMode, setViewMode] = useState<QuizView>(initialSession?.viewMode ?? 'practice');
 
   // Filters for practice mode
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>(initialSession?.selectedCategory ?? 'all');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string>(initialSession?.selectedDifficulty ?? 'all');
 
   // State for practice answers: questionId -> selected answer index
-  const [practiceAnswers, setPracticeAnswers] = useState<Record<string, number>>({});
-  const [revealedExplanations, setRevealedExplanations] = useState<Record<string, boolean>>({});
+  const [practiceAnswers, setPracticeAnswers] = useState<Record<string, number>>(initialSession?.practiceAnswers ?? {});
+  const [revealedExplanations, setRevealedExplanations] = useState<Record<string, boolean>>(initialSession?.revealedExplanations ?? {});
 
   // State for Exam Mode
-  const [examQuestions, setExamQuestions] = useState<Question[]>([]);
-  const [currentExamIndex, setCurrentExamIndex] = useState<number>(0);
-  const [examUserAnswers, setExamUserAnswers] = useState<(number | null)[]>([]);
-  const [examFinished, setExamFinished] = useState<boolean>(false);
-  const [examScore, setExamScore] = useState<number>(0);
+  const [examQuestions, setExamQuestions] = useState<Question[]>(() => initialSession
+    ? initialSession.examQuestionIds.map((id) => QUESTION_BANK.find((question) => question.id === id)!).filter(Boolean)
+    : []);
+  const [currentExamIndex, setCurrentExamIndex] = useState<number>(initialSession?.currentExamIndex ?? 0);
+  const [examUserAnswers, setExamUserAnswers] = useState<(number | null)[]>(initialSession?.examUserAnswers ?? []);
+  const [examFinished, setExamFinished] = useState<boolean>(initialSession?.examFinished ?? false);
+  const [examScore, setExamScore] = useState<number | null>(initialSession?.examScore ?? null);
 
   // Filtered practice questions
   const filteredQuestions = QUESTION_BANK.filter((q) => {
@@ -33,6 +43,25 @@ export const QuizArena: React.FC<QuizArenaProps> = ({ onEarnStar }) => {
     if (selectedDifficulty !== 'all' && q.difficulty !== selectedDifficulty) return false;
     return true;
   });
+  const displayedExamScore = examScore ?? 0;
+  const displayedBestScore = bestQuizScore === null ? displayedExamScore : Math.max(bestQuizScore, displayedExamScore);
+
+  useEffect(() => {
+    const session: QuizSession = {
+      version: 1,
+      viewMode,
+      selectedCategory,
+      selectedDifficulty,
+      practiceAnswers,
+      revealedExplanations,
+      examQuestionIds: examQuestions.map((question) => question.id),
+      currentExamIndex,
+      examUserAnswers,
+      examFinished,
+      examScore,
+    };
+    safeSetItem(STORAGE_KEYS.QUIZ_SESSION, JSON.stringify(session));
+  }, [viewMode, selectedCategory, selectedDifficulty, practiceAnswers, revealedExplanations, examQuestions, currentExamIndex, examUserAnswers, examFinished, examScore]);
 
   // Start Exam Mode
   const startExam = () => {
@@ -43,7 +72,7 @@ export const QuizArena: React.FC<QuizArenaProps> = ({ onEarnStar }) => {
     setCurrentExamIndex(0);
     setExamUserAnswers(new Array(shuffled.length).fill(null));
     setExamFinished(false);
-    setExamScore(0);
+    setExamScore(null);
     setViewMode('exam');
   };
 
@@ -54,7 +83,7 @@ export const QuizArena: React.FC<QuizArenaProps> = ({ onEarnStar }) => {
 
     if (optionIdx === question.correctAnswer) {
       playSuccessSound();
-      onEarnStar();
+      onCompleteActivity(`quiz-practice-${question.id}`);
     } else {
       playGentleWrongSound();
     }
@@ -82,16 +111,16 @@ export const QuizArena: React.FC<QuizArenaProps> = ({ onEarnStar }) => {
       const finalScore = Math.round((correctCount / examQuestions.length) * 100);
       setExamScore(finalScore);
       setExamFinished(true);
+      onRecordQuizScore(finalScore);
 
       // Play fanfare and confetti
       playCelebrationFanfare();
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 }
-      });
-      // Reward stars
-      if (finalScore >= 80) onEarnStar();
+      const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+      if (!reducedMotion) {
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+      }
+      // Record every finished attempt, and award only on the passing score.
+      onCompleteActivity('quiz-exam-01', finalScore >= 80);
     }
   };
 
@@ -129,7 +158,7 @@ export const QuizArena: React.FC<QuizArenaProps> = ({ onEarnStar }) => {
                 playClickSound();
                 setViewMode('practice');
               }}
-              className={`btn-tactile text-xs sm:text-sm font-extrabold px-4 py-2.5 rounded-2xl border transition-all ${
+              className={`btn-tactile min-h-11 text-xs sm:text-sm font-extrabold px-4 py-2.5 rounded-2xl border transition-all ${
                 viewMode === 'practice'
                   ? 'bg-amber-500 text-white border-amber-600 shadow-md shadow-amber-500/20'
                   : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800'
@@ -139,7 +168,7 @@ export const QuizArena: React.FC<QuizArenaProps> = ({ onEarnStar }) => {
             </button>
             <button
               onClick={startExam}
-              className={`btn-tactile text-xs sm:text-sm font-extrabold px-4 py-2.5 rounded-2xl border transition-all ${
+              className={`btn-tactile min-h-11 text-xs sm:text-sm font-extrabold px-4 py-2.5 rounded-2xl border transition-all ${
                 viewMode === 'exam'
                   ? 'bg-amber-500 text-white border-amber-600 shadow-md shadow-amber-500/20'
                   : 'bg-gradient-to-r from-yellow-500 to-amber-600 text-white border-yellow-500 shadow-sm'
@@ -174,7 +203,7 @@ export const QuizArena: React.FC<QuizArenaProps> = ({ onEarnStar }) => {
                     playClickSound();
                     setSelectedCategory(c.id);
                   }}
-                  className={`btn-tactile text-xs font-bold px-3 py-1.5 rounded-xl border transition-all ${
+                  className={`btn-tactile min-h-11 text-xs font-bold px-3 py-1.5 rounded-xl border transition-all ${
                     selectedCategory === c.id
                       ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
                       : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
@@ -200,7 +229,7 @@ export const QuizArena: React.FC<QuizArenaProps> = ({ onEarnStar }) => {
                     playClickSound();
                     setSelectedDifficulty(d.id);
                   }}
-                  className={`btn-tactile text-xs font-bold px-2.5 py-1 rounded-xl border transition-all ${
+                  className={`btn-tactile min-h-11 text-xs font-bold px-2.5 py-1 rounded-xl border transition-all ${
                     selectedDifficulty === d.id
                       ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900'
                       : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
@@ -254,8 +283,9 @@ export const QuizArena: React.FC<QuizArenaProps> = ({ onEarnStar }) => {
 
                     <button
                       onClick={() => speakIndonesian(q.question)}
-                      className="btn-tactile p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-amber-600"
+                      className="btn-tactile min-h-11 min-w-11 p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-amber-600"
                       title="Dengarkan Soal Ini"
+                      aria-label="Dengarkan soal ini"
                     >
                       <Volume2 className="w-4 h-4" />
                     </button>
@@ -316,7 +346,7 @@ export const QuizArena: React.FC<QuizArenaProps> = ({ onEarnStar }) => {
                         playClickSound();
                         setRevealedExplanations((prev) => ({ ...prev, [q.id]: !prev[q.id] }));
                       }}
-                      className="btn-tactile text-xs font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 hover:underline"
+                      className="btn-tactile min-h-11 px-1 text-xs font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 hover:underline"
                     >
                       <Lightbulb className="w-4 h-4" />
                       <span>{isExplRevealed ? 'Sembunyikan Pembahasan' : 'Buka Pembahasan Lengkap & Trik Guru'}</span>
@@ -397,7 +427,8 @@ export const QuizArena: React.FC<QuizArenaProps> = ({ onEarnStar }) => {
                     </span>
                     <button
                       onClick={() => speakIndonesian(examQuestions[currentExamIndex].question)}
-                      className="btn-tactile p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500"
+                      className="btn-tactile min-h-11 min-w-11 p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500"
+                      aria-label="Dengarkan soal ini"
                     >
                       <Volume2 className="w-3.5 h-3.5" />
                     </button>
@@ -439,7 +470,7 @@ export const QuizArena: React.FC<QuizArenaProps> = ({ onEarnStar }) => {
                         playClickSound();
                         setCurrentExamIndex(currentExamIndex - 1);
                       }}
-                      className="btn-tactile text-xs font-bold px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 disabled:opacity-30"
+                      className="btn-tactile min-h-11 px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 disabled:opacity-30"
                     >
                       ← Soal Sebelumnya
                     </button>
@@ -447,7 +478,7 @@ export const QuizArena: React.FC<QuizArenaProps> = ({ onEarnStar }) => {
                     <button
                       disabled={examUserAnswers[currentExamIndex] === null}
                       onClick={handleNextExamQuestion}
-                      className="btn-tactile flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-sm shadow-md shadow-amber-500/25 disabled:opacity-40"
+                      className="btn-tactile min-h-11 flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-sm shadow-md shadow-amber-500/25 disabled:opacity-40"
                     >
                       <span>
                         {currentExamIndex === examQuestions.length - 1 ? 'Selesaikan Kuis & Lihat Hasil' : 'Soal Berikutnya'}
@@ -468,34 +499,23 @@ export const QuizArena: React.FC<QuizArenaProps> = ({ onEarnStar }) => {
                 Laporan Hasil Ujian Siswa
               </span>
               <h3 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white mt-1">
-                Skor Akhir: {examScore} / 100
+                Skor Akhir: {displayedExamScore} / 100
               </h3>
+              <p className="mt-1 text-sm font-bold text-slate-600 dark:text-slate-300">Skor terbaik tersimpan: {displayedBestScore} / 100</p>
 
               <div className="flex items-center justify-center gap-2 my-4">
-                {examScore >= 80 ? (
+                {displayedExamScore >= 80 ? (
                   <span className="px-4 py-2 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-extrabold text-xs sm:text-sm flex items-center gap-2 border border-emerald-300 dark:border-emerald-800">
                     <Sparkles className="w-4 h-4 text-amber-500" />
-                    <span>Predikat: Sangat Hebat! (Bintang Emas)</span>
-                    <span className="flex items-center gap-0.5 text-amber-500">
-                      <Star className="w-3.5 h-3.5 fill-amber-400" />
-                      <Star className="w-3.5 h-3.5 fill-amber-400" />
-                      <Star className="w-3.5 h-3.5 fill-amber-400" />
-                    </span>
+                    <span>Predikat: Sangat Hebat! Tantangan kuis berhasil diselesaikan.</span>
                   </span>
-                ) : examScore >= 60 ? (
+                ) : displayedExamScore >= 60 ? (
                   <span className="px-4 py-2 rounded-full bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 font-extrabold text-xs sm:text-sm flex items-center gap-2 border border-sky-300 dark:border-sky-800">
-                    <span>Predikat: Bagus Sekali! (Bintang Perak)</span>
-                    <span className="flex items-center gap-0.5 text-slate-400">
-                      <Star className="w-3.5 h-3.5 fill-slate-400" />
-                      <Star className="w-3.5 h-3.5 fill-slate-400" />
-                    </span>
+                    <span>Predikat: Bagus Sekali! Teruskan latihan agar makin teliti.</span>
                   </span>
                 ) : (
                   <span className="px-4 py-2 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-extrabold text-xs sm:text-sm flex items-center gap-2 border border-amber-300 dark:border-amber-800">
-                    <span>Predikat: Semangat Belajar Lagi! (Bintang Perunggu)</span>
-                    <span className="flex items-center gap-0.5 text-amber-600">
-                      <Star className="w-3.5 h-3.5 fill-amber-600" />
-                    </span>
+                    <span>Predikat: Semangat belajar lagi. Baca pembahasan dan coba kembali.</span>
                   </span>
                 )}
               </div>
@@ -556,14 +576,14 @@ export const QuizArena: React.FC<QuizArenaProps> = ({ onEarnStar }) => {
               <div className="mt-8 flex items-center justify-center gap-3">
                 <button
                   onClick={startExam}
-                  className="btn-tactile flex items-center gap-1.5 px-6 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-sm shadow-md"
+                  className="btn-tactile min-h-11 flex items-center gap-1.5 px-6 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-sm shadow-md"
                 >
                   <RotateCcw className="w-4 h-4" />
                   <span>Ulangi Kuis Baru</span>
                 </button>
                 <button
                   onClick={() => setViewMode('practice')}
-                  className="btn-tactile px-6 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white font-extrabold text-sm border border-slate-200 dark:border-slate-700"
+                  className="btn-tactile min-h-11 px-6 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white font-extrabold text-sm border border-slate-200 dark:border-slate-700"
                 >
                   Kembali ke Bank Soal
                 </button>

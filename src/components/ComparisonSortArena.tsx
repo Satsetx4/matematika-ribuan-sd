@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { Scale, Train, ArrowUpDown, CheckCircle2, RotateCcw, Sparkles, ArrowRight, Lightbulb } from 'lucide-react';
-import { playClickSound, playSuccessSound, playGentleWrongSound } from '../utils/soundEffects';
+import { Scale, Train, CheckCircle2, Sparkles, Lightbulb } from 'lucide-react';
+import { playClickSound, playSuccessSound } from '../utils/soundEffects';
+import { NumberInput } from './ui/NumberInput';
+import { compareNumbers } from '../domain/math/comparison';
 
 interface ComparisonSortArenaProps {
-  onEarnStar: () => void;
+  onCompleteActivity: (activityId: string) => void;
 }
 
-export const ComparisonSortArena: React.FC<ComparisonSortArenaProps> = ({ onEarnStar }) => {
+export const ComparisonSortArena: React.FC<ComparisonSortArenaProps> = ({ onCompleteActivity }) => {
   // Comparison state
   const [numA, setNumA] = useState<number>(2470);
   const [numB, setNumB] = useState<number>(2350);
@@ -15,22 +17,17 @@ export const ComparisonSortArena: React.FC<ComparisonSortArenaProps> = ({ onEarn
   type SortMode = 'ascending' | 'descending';
   const [sortMode, setSortMode] = useState<SortMode>('ascending');
   
-  const sortPresets = {
-    ascending: [2350, 2200, 2470, 2100, 2250],
-    descending: [6800, 6400, 6700, 6600, 6900],
-    challenge: [3250, 1978, 4005, 2750]
-  };
-
   const [trainCars, setTrainCars] = useState<number[]>([2350, 2200, 2470, 2100, 2250]);
   const [sortCompleted, setSortCompleted] = useState<boolean>(false);
 
   // Determine comparison symbol
+  const comparison = compareNumbers(numA, numB);
   let compSymbol = '=';
   let compWord = 'sama dengan';
-  if (numA > numB) {
+  if (comparison > 0) {
     compSymbol = '>';
     compWord = 'lebih besar dari (>)';
-  } else if (numA < numB) {
+  } else if (comparison < 0) {
     compSymbol = '<';
     compWord = 'lebih kecil dari (<)';
   }
@@ -90,9 +87,11 @@ export const ComparisonSortArena: React.FC<ComparisonSortArenaProps> = ({ onEarn
       }
     }
     if (isCorrect) {
+      if (!sortCompleted) {
+        playSuccessSound();
+        onCompleteActivity('comparison-sort-01');
+      }
       setSortCompleted(true);
-      playSuccessSound();
-      onEarnStar();
     } else {
       setSortCompleted(false);
     }
@@ -160,7 +159,7 @@ export const ComparisonSortArena: React.FC<ComparisonSortArenaProps> = ({ onEarn
                   setNumA(p.a);
                   setNumB(p.b);
                 }}
-                className="btn-tactile text-xs font-bold px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-sky-100 dark:hover:bg-sky-950 border border-slate-200 dark:border-slate-700"
+                className="btn-tactile min-h-11 text-xs font-bold px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-sky-100 dark:hover:bg-sky-950 border border-slate-200 dark:border-slate-700"
               >
                 {p.label}
               </button>
@@ -180,12 +179,15 @@ export const ComparisonSortArena: React.FC<ComparisonSortArenaProps> = ({ onEarn
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2">
               Bilangan Pertama
             </span>
-            <input
-              type="number"
+            <NumberInput
+              key={numA}
+              id="comparison-number-a"
+              label="Bilangan Pertama"
+              value={numA}
               min={1000}
               max={9999}
-              value={numA}
-              onChange={(e) => setNumA(parseInt(e.target.value) || 1000)}
+              onCommit={setNumA}
+              labelClassName="sr-only"
               className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white bg-transparent text-center w-full focus:outline-none"
             />
             <div className="mt-3 grid grid-cols-4 gap-1 text-[11px] font-bold">
@@ -220,12 +222,15 @@ export const ComparisonSortArena: React.FC<ComparisonSortArenaProps> = ({ onEarn
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2">
               Bilangan Kedua
             </span>
-            <input
-              type="number"
+            <NumberInput
+              key={numB}
+              id="comparison-number-b"
+              label="Bilangan Kedua"
+              value={numB}
               min={1000}
               max={9999}
-              value={numB}
-              onChange={(e) => setNumB(parseInt(e.target.value) || 1000)}
+              onCommit={setNumB}
+              labelClassName="sr-only"
               className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white bg-transparent text-center w-full focus:outline-none"
             />
             <div className="mt-3 grid grid-cols-4 gap-1 text-[11px] font-bold">
@@ -282,7 +287,7 @@ export const ComparisonSortArena: React.FC<ComparisonSortArenaProps> = ({ onEarn
           <div className="flex items-center gap-2">
             <button
               onClick={() => switchPreset('asc')}
-              className={`btn-tactile text-xs font-bold px-3 py-1.5 rounded-xl border ${
+              className={`btn-tactile min-h-11 text-xs font-bold px-3 py-1.5 rounded-xl border ${
                 sortMode === 'ascending'
                   ? 'bg-sky-500 text-white border-sky-600'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
@@ -292,7 +297,7 @@ export const ComparisonSortArena: React.FC<ComparisonSortArenaProps> = ({ onEarn
             </button>
             <button
               onClick={() => switchPreset('desc')}
-              className={`btn-tactile text-xs font-bold px-3 py-1.5 rounded-xl border ${
+              className={`btn-tactile min-h-11 text-xs font-bold px-3 py-1.5 rounded-xl border ${
                 sortMode === 'descending'
                   ? 'bg-purple-500 text-white border-purple-600'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
@@ -314,7 +319,7 @@ export const ComparisonSortArena: React.FC<ComparisonSortArenaProps> = ({ onEarn
           {sortCompleted && (
             <span className="flex items-center gap-1 text-xs font-extrabold px-3 py-1 rounded-full bg-emerald-500 text-white animate-bounce">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              Sempurna! +1 Bintang
+              Urutan benar!
             </span>
           )}
         </div>
@@ -356,14 +361,14 @@ export const ComparisonSortArena: React.FC<ComparisonSortArenaProps> = ({ onEarn
                     <button
                       disabled={idx === 0}
                       onClick={() => moveCar(idx, 'left')}
-                      className="btn-tactile text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 disabled:opacity-30"
+                      className="btn-tactile min-h-11 min-w-11 text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 disabled:opacity-30"
                     >
                       ← Geser
                     </button>
                     <button
                       disabled={idx === trainCars.length - 1}
                       onClick={() => moveCar(idx, 'right')}
-                      className="btn-tactile text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 disabled:opacity-30"
+                      className="btn-tactile min-h-11 min-w-11 text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 disabled:opacity-30"
                     >
                       Geser →
                     </button>
