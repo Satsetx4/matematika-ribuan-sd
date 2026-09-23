@@ -180,14 +180,14 @@ export const CURRICULUM_MODULES: TopicModule[] = [
         explanation: 'Pak Budi memiliki 4.250 buah mangga. Ia membeli lagi 1.375 mangga. Kemudian 2.150 mangga dibagikan kepada warga. Berapa sisa mangga?',
         steps: [
           'Langkah 1 (BACA): Pak Budi punya mangga, beli lagi, lalu dibagikan.',
-          'Langkah 2 (PIKIRKAN): "Beli lagi" artinya bertambah (+). "Dibagikan" artinya berkurang (-).',
+          'Langkah 2 (PIKIRKAN): "Beli lagi" sering menandakan jumlah bertambah, sedangkan "dibagikan" sering menandakan jumlah berkurang. Periksa perubahan jumlah dalam seluruh cerita sebelum memilih operasi.',
           'Langkah 3 (HITUNG - Tahap 1): 4.250 + 1.375 = 5.625 mangga.',
           'Langkah 3 (HITUNG - Tahap 2): 5.625 - 2.150 = 3.475 mangga.',
           'Langkah 4 (JAWAB): Jadi, sisa buah mangga Pak Budi adalah 3.475 buah.'
         ]
       }
     ],
-    tips: 'Cari Kata Kuncinya! "Mendapat / Beli lagi / Seluruhnya" = Tambah (+). "Dijual / Diberikan / Digunakan / Sisa / Kembalian" = Kurang (-).'
+    tips: 'Kata seperti "mendapat", "beli lagi", "dibagikan", dan "tersisa" dapat menjadi petunjuk. Cocokkan dengan perubahan jumlah di seluruh cerita; kata-kata itu tidak otomatis menentukan operasi.'
   }
 ];
 
